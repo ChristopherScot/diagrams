@@ -1,10 +1,3 @@
-// Bundles web/index.html and the lib/ modules it imports into one page.
-//
-//   node scripts/build-web.mjs            dist/web/index.html + dist/web/viz.js, served by dist/server.js
-//   node scripts/build-web.mjs --artifact dist/artifact.html, Graphviz from a CDN, for a claude.ai artifact
-//
-// Each module is wrapped in a function scope, in dependency order, so the
-// page runs from a single inline <script type="module"> with no imports.
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'

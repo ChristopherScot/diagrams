@@ -1,18 +1,4 @@
 #!/usr/bin/env bash
-# One-time Garage setup for diagrams: a bucket, a read-write key for this
-# service only, and the key in Vault where config.yaml's `secrets:` reads it.
-#
-#   VAULT_TOKEN="$(op item get homelab-vault-root --fields password --reveal)" \
-#     bash scripts/garage-setup.sh
-#   homelabctl vault --apply      # then let the service read kv/diagrams/s3
-#
-# Safe to re-run: the bucket and key are check-then-create (garage's
-# `key create` mints a NEW key on every call, name is not unique, so it
-# must never run twice), and the grant is re-applied every time.
-#
-# The secret goes from garage into Vault on stdin, through `vault kv put`
-# run inside the Vault pod, so it never reaches this terminal or a command
-# line. Without VAULT_TOKEN it stops before changing anything.
 set -euo pipefail
 
 NS="${GARAGE_NS:-garage}"

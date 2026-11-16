@@ -136,8 +136,6 @@ app.get('/metrics', async (_request, reply) =>
   reply.type(register.contentType).send(await register.metrics()))
 
 const here = path.dirname(fileURLToPath(import.meta.url))
-// The bundle (dist/server.js) ships next to dist/web/, built by
-// scripts/build-web.mjs; from source the page loads lib/ as modules.
 const bundled = import.meta.url.endsWith('.js')
 const webFile = (name: string) => path.join(here, 'web', name)
 
