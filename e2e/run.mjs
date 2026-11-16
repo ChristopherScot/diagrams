@@ -1,11 +1,3 @@
-// Browser tests: starts the server from source on :8091 with an empty,
-// throwaway diagrams folder, runs each e2e/*.cjs, and reports.
-//
-//   npm run e2e               every test
-//   npm run e2e -- views rows only these
-//
-// Needs a Chromium that matches playwright-core (`npx playwright-core
-// install chromium` once).
 import { spawn } from 'node:child_process'
 import { mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'

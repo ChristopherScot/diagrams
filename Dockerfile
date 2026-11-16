@@ -38,7 +38,6 @@ ENV VERSION=$VERSION
 
 WORKDIR /app
 COPY --from=build --chown=65532:65532 /repo/./dist/server.js ./
-# The editor page and Graphviz for the browser, built by scripts/build-web.mjs.
 COPY --from=build --chown=65532:65532 /repo/./dist/web ./web
 
 USER 65532:65532

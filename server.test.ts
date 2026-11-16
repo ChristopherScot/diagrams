@@ -4,8 +4,6 @@ import { mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-// The server reads its storage from the environment as it loads, so the
-// folder is chosen before the import.
 const dir = mkdtempSync(path.join(tmpdir(), 'diagrams-test-'))
 process.env.STORAGE = 'folder'
 process.env.DIAGRAMS_DIR = dir
