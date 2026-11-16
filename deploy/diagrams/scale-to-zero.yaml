@@ -1,28 +1,3 @@
-# Scale-to-zero for diagrams via the KEDA HTTP add-on in the homelab
-# cluster (pattern home: homelab arr-stack/_shared/keda-http-interceptor.yaml;
-# same shape as pokedex-web in ChristopherScot/pokemon). The Ingress routes
-# to the interceptor alias below; the InterceptorRoute wakes the Deployment
-# on the first request, and the ScaledObject scales it back to 0 after the
-# idle cooldown.
-#
-# Hand-written, like the edits to deployment.yaml (no `replicas:`) and
-# ingress.yaml (backend = the interceptor) that go with it. `homelabctl
-# render` regenerates those two files without them, so re-apply both
-# after a render; see README "Scale to zero".
-#
-# No cold-start placeholder, unlike shelfmark and pokedex-web, and on
-# purpose: every request is HELD until the pod is ready, then answered.
-#   - The MCP endpoint and the API are machine clients. A placeholder is
-#     served to every request on its route while the pod starts, so they
-#     would get a 503 HTML page and fail, where a held request just
-#     takes a few seconds longer (paperless keeps a placeholder-free
-#     route for its API caller for the same reason).
-#   - The wake is short. The server answers /healthz 0.12s after the
-#     process starts and the readiness probe first runs at 2s, so the
-#     wait is mostly Kubernetes starting a pod - nothing like the ~23s
-#     shelfmark measured, which is what the waking page was for.
-# An editor tab left open past the cooldown is covered too: its next
-# autosave is held, wakes the pod, and lands.
 apiVersion: v1
 kind: Service
 metadata:
@@ -32,17 +7,12 @@ spec:
   type: ExternalName
   externalName: keda-add-ons-http-interceptor-proxy.keda.svc.cluster.local
 ---
-# Hosts and paths are coupled to ingress.yaml: every host/path the Ingress
-# sends to the interceptor must match a rule here, or those requests never
-# wake the app.
 apiVersion: http.keda.sh/v1beta1
 kind: InterceptorRoute
 metadata:
   name: diagrams
   namespace: diagrams
   annotations:
-    # Don't block the app's sync on a fresh bootstrap, before the keda app
-    # has installed its CRDs.
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   target:
@@ -53,15 +23,10 @@ spec:
         - diagrams.home.chrisscotmartin.com
       paths:
         - value: /
-  # requestRate 100 is the add-on's conventional default, made explicit as
-  # the API requires. Mostly moot at min 0 / max 1.
   scalingMetric:
     requestRate:
       targetValue: 100
   timeouts:
-    # How long a held request waits for the pod. Unset means forever, so a
-    # wake that fails (an image that won't pull, a crash loop) would hang
-    # every caller; a minute is far past a normal wake.
     readiness: 60s
 ---
 apiVersion: keda.sh/v1alpha1
@@ -78,7 +43,6 @@ spec:
     name: diagrams
   minReplicaCount: 0
   maxReplicaCount: 1
-  # Seconds without traffic before scaling back to zero.
   cooldownPeriod: 900
   triggers:
     - type: external-push

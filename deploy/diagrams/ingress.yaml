@@ -18,9 +18,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                # KEDA HTTP interceptor (scale-to-zero), not the app's own
-                # Service - see scale-to-zero.yaml. 8080 is the
-                # interceptor's port; the diagrams Service still serves 80.
                 name: keda-http-interceptor
                 port:
                   number: 8080

@@ -7,9 +7,6 @@ metadata:
     app: diagrams
     team: me-myself-and-i
 spec:
-  # No replicas: field - KEDA scales this between 0 and 1 (see
-  # scale-to-zero.yaml). With one here, Argo's self-heal would put the
-  # Deployment back to 1 every time KEDA scaled it to 0.
   # At one replica the default rolling update takes the only pod down
   # first; surging instead keeps the service up across a deploy.
   strategy:
