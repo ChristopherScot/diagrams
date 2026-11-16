@@ -8,6 +8,7 @@ resources:
   - service.yaml
   - externalsecret.yaml
   - ingress.yaml
+  - scale-to-zero.yaml
 images:
   - name: ghcr.io/christopherscot/diagrams
     newTag: latest
