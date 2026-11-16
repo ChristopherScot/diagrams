@@ -47,7 +47,7 @@ the previous version of each save under `history/<id>/` and deletions
 under `trash/`. The bucket and key are made once by hand:
 
 ```sh
-VAULT_TOKEN=... bash scripts/garage-setup.sh
+VAULT_TOKEN="$(op item get homelab-vault-root --fields password --reveal)" bash scripts/garage-setup.sh
 homelabctl vault --apply
 ```
 
