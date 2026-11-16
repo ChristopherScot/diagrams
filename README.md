@@ -105,8 +105,7 @@ npm run e2e           # browser tests against a throwaway server on :8091
 ## Scale to zero
 
 The pod sleeps after 15 idle minutes and wakes on the next request
-(KEDA HTTP add-on; `deploy/diagrams/scale-to-zero.yaml` says how and
-why). Every request, MCP and API included, is held until the pod is
+(KEDA HTTP add-on, `deploy/diagrams/scale-to-zero.yaml`). Every request, MCP and API included, is held until the pod is
 ready rather than answered with a waking page.
 
 Two generated files carry hand edits for it, and `homelabctl render`
