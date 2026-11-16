@@ -102,6 +102,20 @@ npm run e2e           # browser tests against a throwaway server on :8091
 `npm run e2e` needs a Chromium matching playwright-core
 (`npx playwright-core install chromium` once).
 
+## Scale to zero
+
+The pod sleeps after 15 idle minutes and wakes on the next request
+(KEDA HTTP add-on, `deploy/diagrams/scale-to-zero.yaml`). Every request, MCP and API included, is held until the pod is
+ready rather than answered with a waking page.
+
+Two generated files carry hand edits for it, and `homelabctl render`
+rewrites both without them. After a render, put them back:
+
+- `deploy/diagrams/deployment.yaml`: delete `replicas:`
+- `deploy/diagrams/ingress.yaml`: backend `keda-http-interceptor`, port `8080`
+
+and keep `scale-to-zero.yaml` listed in `deploy/diagrams/kustomization.yaml`.
+
 ## Deploy
 
 CI builds and pushes an image on every push to `main`;
