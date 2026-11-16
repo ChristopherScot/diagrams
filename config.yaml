@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=config.schema.json
+# The single source of truth for this service. `homelabctl render`
+# regenerates every manifest from it, so change things here rather than
+# editing deploy/ by hand.
+name: diagrams
+team: me-myself-and-i
+runtime: node-service
+spec: false
+image:
+    repository: ghcr.io/christopherscot/diagrams
+port: 3000
+resources:
+    cpuRequest: 10m
+    # Graphviz runs in-process (WebAssembly) to check every save.
+    memoryRequest: 128Mi
+    memoryLimit: 384Mi
+hardened: true
+metrics: true
+
+env:
+    STORAGE: garage
+    S3_ENDPOINT: http://garage.garage.svc.cluster.local:3900
+    S3_BUCKET: diagrams
+    PUBLIC_URL: https://diagrams.home.chrisscotmartin.com
+
+# Written by scripts/garage-setup.sh (run by hand, once).
+secrets:
+    vaultPath: diagrams/s3
+    keys:
+        - S3_ACCESS_KEY_ID: access-key-id
+        - S3_SECRET_ACCESS_KEY: secret-access-key
+
+# LAN and tailnet only: no `public`, no login.
+ingress:
+    hosts:
+        - diagrams.home.chrisscotmartin.com

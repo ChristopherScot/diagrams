@@ -1,0 +1,1540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DOT Playground</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --fg: #16181d; --muted: #5d6470; --line: #dde1e7; --accent: #2563eb; --error: #b42318;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace; --sans: system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #12151c; --panel: #1a1e27; --fg: #e6e9ef; --muted: #98a1b3; --line: #333a48; --accent: #8ea6ff; --error: #ef7a72; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #12151c; --panel: #1a1e27; --fg: #e6e9ef; --muted: #98a1b3; --line: #333a48; --accent: #8ea6ff; --error: #ef7a72; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { display: grid; grid-template-rows: auto 1fr auto; background: var(--bg); color: var(--fg); font: 14px/1.4 var(--sans); }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+h1 { margin: 0; font-size: 16px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.name { all: unset; cursor: text; border-radius: 6px; padding: 2px 6px; margin: 0 -6px; }
+.name:hover, .name:focus-visible { background: var(--bg); }
+.name-input { font: inherit; font-size: 16px; font-weight: 600; color: var(--fg); background: var(--bg); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 6px; width: min(40ch, 60vw); }
+.copy-link { font-size: 13px; padding: 4px 10px; }
+.back { border: 0; background: none; padding: 4px 6px; color: var(--accent); font-weight: 500; }
+.help { position: relative; }
+.help summary { cursor: pointer; list-style: none; color: var(--muted); font-size: 13px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.help summary::-webkit-details-marker { display: none; }
+.help[open] summary { color: var(--fg); border-color: var(--accent); }
+.hints { position: absolute; z-index: 35; top: calc(100% + 6px); left: 0; display: grid; gap: 8px; width: min(380px, calc(100vw - 32px)); padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 12px 32px rgb(0 0 0 / 0.25); color: var(--muted); font-size: 13px; }
+.hints .grip { color: var(--accent); font-weight: 600; }
+kbd { font: 11px var(--mono); padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); }
+.tools { margin-left: auto; display: flex; gap: 6px; }
+.burger { display: none; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.scrim { display: none; }
+.drawer-close { display: none; }
+button { font: inherit; font-size: 13px; padding: 5px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); cursor: pointer; }
+button:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, textarea:focus-visible, #canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.side { display: grid; grid-template-rows: auto auto auto auto auto auto 1fr; align-content: start; width: 340px; min-height: 0; border-left: 1px solid var(--line); background: var(--panel); }
+.style-row { padding: 14px 16px; }
+#style-bar { --ds-accent: var(--accent); --ds-bg: var(--panel); --ds-fg: var(--fg); --ds-line: var(--line); --ds-muted: var(--muted); flex-direction: column; align-items: flex-start; }
+.style-row .hint { color: var(--muted); font-size: 12.5px; }
+#style-bar:not([hidden]) + .hint { display: none; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) auto; min-height: 0; }
+#canvas { --dt-ink: var(--fg); --dt-surface: var(--panel); --dc-accent: var(--accent); --dc-editor-bg: var(--panel); --dc-editor-fg: var(--fg); padding: 24px; background: var(--panel); min-height: 0; }
+#canvas > svg:not(.dc-overlay) { margin: auto; max-width: 100%; height: auto; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 16px 0; }
+.actions button[disabled] { opacity: 0.45; }
+.new-menu { position: relative; }
+.new-menu .menu { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; display: grid; min-width: 140px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: 0 8px 24px rgb(0 0 0 / 0.18); }
+.new-menu .menu[hidden] { display: none; }
+.new-menu .menu button { border: 0; text-align: left; padding: 8px 10px; }
+.new-menu .menu button:hover, .new-menu .menu button:focus-visible { background: var(--bg); }
+#new-button[aria-pressed="true"] { background: var(--accent); color: var(--panel); border-color: var(--accent); }
+.row-line { display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; font-size: 12px; color: var(--muted); }
+.row-line[hidden] { display: none; }
+.row-line span { flex: 1; min-width: 0; }
+.move-row[hidden] { display: none; }
+.move-row { display: flex; align-items: center; gap: 8px; padding: 12px 16px 0; font-size: 12px; color: var(--muted); }
+.move-row select { flex: 1; min-width: 0; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); }
+.side:has(.debug:not([hidden])) { width: min(440px, 40vw); }
+.debug { display: grid; grid-template-rows: auto 1fr; min-height: 0; border-top: 1px solid var(--line); }
+.debug[hidden] { display: none; }
+.debug-head { padding: 8px 16px; color: var(--muted); font-size: 12px; }
+#source { width: 100%; height: 100%; min-height: 200px; margin: 0; padding: 10px 16px; border: 0; resize: none; background: var(--bg); color: var(--fg); font: 12.5px/1.5 var(--mono); tab-size: 2; }
+#source.invalid { box-shadow: inset 3px 0 0 var(--error); }
+footer { display: flex; gap: 16px; padding: 8px 16px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); min-height: 34px; }
+#status.error, #saved.error { color: var(--error); }
+#saved { color: var(--muted); font-size: 12px; }
+.map-toggle { margin-left: auto; padding: 3px 10px; font-size: 12px; }
+#selection { font-family: var(--mono); }
+#debug-toggle { margin-left: auto; padding: 1px 8px; font-size: 12px; }
+.stage { display: grid; grid-template-rows: auto auto auto minmax(0, 1fr) auto; min-height: 0; min-width: 0; background: var(--panel); }
+.crumbs { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; padding: 10px 16px 0; font-size: 13px; }
+.crumbs button { border: 0; background: none; padding: 2px 4px; color: var(--accent); }
+.crumbs button[aria-current="page"] { color: var(--fg); font-weight: 600; cursor: default; }
+.crumbs .sep { color: var(--muted); }
+.crumbs:empty { display: none; }
+.crumbs .spacer { flex: 1; }
+.crumbs .title { color: var(--fg); font-size: 15px; font-weight: 600; cursor: text; }
+.crumbs .title-input { font: inherit; font-size: 15px; font-weight: 600; color: var(--fg); background: var(--bg); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 6px; }
+.crumbs .delete-view { color: var(--fg); border: 1px solid var(--line); font-size: 12px; padding: 2px 8px; margin-right: 6px; }
+.crumbs select { font: inherit; font-size: 12px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); }
+.view-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 6px 16px 0; }
+.view-head .title { border: 0; background: none; padding: 0; font-size: 18px; font-weight: 600; color: var(--fg); text-align: left; }
+.view-head .caption { border: 0; background: none; padding: 0; font-size: 13px; color: var(--muted); text-align: left; flex: 1; min-width: 12ch; }
+.view-head .caption.empty { font-style: italic; opacity: 0.7; }
+.view-head input, .view-head textarea { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--accent); border-radius: 6px; padding: 2px 6px; }
+.view-head .title-input { font-size: 18px; font-weight: 600; }
+.view-head .caption-input { flex: 1; min-width: 20ch; font-size: 13px; }
+.stage > #canvas { grid-row: 4; }
+.stage > .view-text { grid-row: 5; max-height: 35vh; overflow-y: auto; display: grid; gap: 8px; padding: 10px 16px 12px; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.5; }
+.text-block { cursor: text; border-radius: 6px; padding: 2px 4px; margin: 0 -4px; max-width: 80ch; }
+.text-block:hover, .text-block:focus-visible { background: var(--bg); outline: none; }
+.text-block.caption { color: var(--fg); }
+.text-block.notes { color: var(--muted); }
+.text-block.empty { font-style: italic; color: var(--muted); opacity: 0.7; }
+.text-block > :first-child { margin-top: 0; } .text-block > :last-child { margin-bottom: 0; }
+.text-block p, .text-block ul, .text-block ol, .text-block pre, .text-block blockquote { margin: 0 0 6px; }
+.text-block h3, .text-block h4, .text-block h5, .text-block h6 { margin: 8px 0 4px; font-size: 14px; }
+.text-block code { font-family: var(--mono); font-size: 0.92em; background: var(--bg); border-radius: 4px; padding: 0 3px; }
+.text-block pre { background: var(--bg); border-radius: 6px; padding: 8px; overflow-x: auto; }
+.text-block pre code { background: none; padding: 0; }
+.text-block blockquote { border-left: 3px solid var(--line); padding-left: 10px; }
+.text-block a { color: var(--accent); }
+.text-input { font: inherit; width: 100%; max-width: 80ch; box-sizing: border-box; color: var(--fg); background: var(--bg); border: 1px solid var(--accent); border-radius: 6px; padding: 6px 8px; resize: vertical; }
+.text-hint { display: none; font-size: 12px; color: var(--muted); }
+.view-text:has(.text-input) .text-hint { display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 8px 16px 0; font-size: 13px; }
+.legend .chip { display: inline-flex; align-items: center; gap: 6px; }
+.legend .swatch { width: 14px; height: 14px; border-radius: 4px; border: 2px solid; }
+.legend button { border: 0; background: none; padding: 0; color: var(--fg); font-size: 13px; }
+.legend button.unnamed { color: var(--muted); font-style: italic; }
+.legend input { font: inherit; font-size: 13px; width: 14ch; padding: 1px 6px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); color: var(--fg); }
+body.in-library > header, body.in-library > main, body.in-library > footer { display: none; }
+body.in-library { display: block; }
+.library { min-height: 100%; padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.library-inner { max-width: 1100px; margin: 0 auto; display: grid; gap: 16px; }
+.library-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; }
+.library-head h1 { font-size: 22px; }
+.library-where { color: var(--muted); font-size: 13px; }
+.library-actions { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.library-actions input[type=search] { font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); width: 180px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 600; }
+.library-note { margin: 0; color: var(--muted); min-height: 1.4em; }
+.library-note.error { color: var(--error); }
+.library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.card { position: relative; display: grid; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+.card:hover, .card:focus-within { border-color: var(--accent); }
+.card-open { all: unset; cursor: pointer; display: grid; }
+.card-open:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 12px; }
+.thumb { aspect-ratio: 16 / 10; max-width: 100%; display: grid; place-items: center; padding: 12px; background: var(--bg); border-bottom: 1px solid var(--line); overflow: hidden; }
+.thumb svg { width: 100%; height: 100%; }
+.thumb .thumb-empty { color: var(--muted); font-size: 12px; }
+.card-meta { display: grid; gap: 2px; padding: 10px 44px 12px 14px; min-width: 0; }
+.card-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-sub { color: var(--muted); font-size: 12.5px; }
+.card-menu { position: absolute; right: 8px; bottom: 10px; border: 0; background: none; padding: 2px 8px; font-size: 18px; line-height: 1; color: var(--muted); }
+.card-menu:hover { color: var(--fg); background: var(--bg); }
+.card-rename { font: inherit; font-weight: 600; width: 100%; padding: 2px 6px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.library-empty { display: grid; justify-items: center; gap: 12px; padding: 64px 16px; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+.context-menu { position: fixed; z-index: 20; display: grid; min-width: 180px; padding: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: 0 10px 28px rgb(0 0 0 / 0.22); }
+.context-menu button { border: 0; text-align: left; padding: 8px 10px; border-radius: 6px; background: none; }
+.context-menu button:hover, .context-menu button:focus-visible { background: var(--bg); }
+.context-menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
+.view-head .delete-view { margin-left: auto; font-size: 12px; padding: 2px 8px; }
+.link-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px 0; font-size: 12px; color: var(--muted); }
+.link-row[hidden] { display: none; }
+.link-row label { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.link-row select { flex: 1; min-width: 0; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); }
+.picker { display: grid; gap: 8px; margin: 12px 16px 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.picker[hidden] { display: none; }
+.picker-head { display: flex; gap: 6px; }
+.picker-head input { flex: 1; min-width: 0; font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); }
+.picker-list { display: grid; gap: 2px; max-height: 260px; overflow: auto; }
+.picker-list h3 { margin: 6px 0 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.picker-list button { text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 6px; }
+.picker-list button:hover:not(:disabled) { background: var(--panel); }
+.picker-list button:disabled { opacity: 0.5; cursor: default; }
+.picker-list .empty { color: var(--muted); font-size: 12px; padding: 6px 8px; }
+.prompt-card { position: fixed; z-index: 40; display: grid; gap: 10px; width: max-content; max-width: min(420px, calc(100vw - 32px)); padding: 12px 14px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel); color: var(--fg); box-shadow: 0 12px 32px rgb(0 0 0 / 0.3); font-size: 14px; }
+.prompt-card .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.prompt-card button { padding: 4px 12px; }
+.prompt-card button:first-child { border-color: var(--accent); }
+.prompt-card button.danger { border-color: var(--error); color: var(--error); }
+button { -webkit-tap-highlight-color: transparent; }
+@media (max-width: 760px) {
+  .help { display: none; } #canvas { padding: 12px; } #selection { display: none; }
+  main { grid-template-columns: 1fr; }
+  .burger { display: block; } .panel-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #panel-toggle { padding: 6px 8px; }
+  .side, .side:has(.debug:not([hidden])) { position: fixed; z-index: 30; top: 0; right: 0; bottom: 0; width: min(340px, 88vw); overflow-y: auto; border-left: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); box-shadow: -12px 0 32px rgb(0 0 0 / 0.3); }
+  .drawer-close { display: block; position: absolute; top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); z-index: 1; padding: 4px 10px; }
+  .scrim { display: block; position: fixed; inset: 0; z-index: 29; background: rgb(0 0 0 / 0.35); }
+}
+</style>
+</head>
+<body>
+<section class="library" id="library" hidden aria-labelledby="library-title">
+  <div class="library-inner">
+    <div class="library-head">
+      <h1 id="library-title">Diagrams</h1>
+      <span class="library-where" id="library-where"></span>
+      <div class="library-actions">
+        <input id="library-search" type="search" placeholder="Search" aria-label="Search diagrams">
+        <button id="library-import" type="button">Import .dot</button>
+        <button id="library-new" class="primary" type="button">New diagram</button>
+        <input id="library-file" type="file" accept=".dot,.gv,text/vnd.graphviz,text/plain" hidden>
+      </div>
+    </div>
+    <p class="library-note" id="library-note" role="status"></p>
+    <div class="library-grid" id="library-grid"></div>
+    <div class="library-empty" id="library-empty" hidden>
+      <p>No diagrams yet.</p>
+      <button id="library-new-empty" class="primary" type="button">New diagram</button>
+    </div>
+  </div>
+</section>
+<header>
+  <button id="to-library" class="back" type="button">← Diagrams</button>
+  <h1><button id="diagram-name" class="name" type="button" title="Rename this diagram"></button></h1>
+  <button id="copy-link" class="copy-link" type="button" hidden>Copy link</button>
+  <details class="help" id="help">
+    <summary>How to</summary>
+    <div class="hints">
+    <span>Drag from a node to a node or box to connect them</span>
+    <span>Drag the <span class="grip" aria-hidden="true">✥</span> grip of a node or box into or out of a box to move it</span>
+    <span>Drop a node's grip on one side of another node to line them up in that order</span>
+    <span>New → Box, then drag around nodes or boxes to group them</span>
+    <span>Click a thick border to open the view it links to</span>
+    <span>Double-click or select and type to rename</span>
+    <span>Select, then <kbd>Tab</kbd> (<kbd>Shift</kbd>+<kbd>Tab</kbd>: one behind it, arrow pointing back) for a new connected node, or <kbd>Delete</kbd></span>
+    </div>
+  </details>
+  <div class="tools">
+    <button id="undo" type="button" disabled>Undo</button>
+    <button id="redo" type="button" disabled>Redo</button>
+    <button id="panel-toggle" type="button" aria-controls="side" aria-expanded="true"><svg class="burger" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/></svg><span class="panel-label">Hide panel</span></button>
+  </div>
+</header>
+<main>
+  <section class="stage">
+    <nav class="crumbs" id="crumbs" aria-label="Views"></nav>
+    <div class="view-head" id="view-head"></div>
+    <div class="legend" id="legend" aria-label="Legend"></div>
+    <div id="canvas" aria-label="Diagram"></div>
+    <div class="view-text" id="view-text"></div>
+  </section>
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="side" id="side">
+    <button class="drawer-close" id="drawer-close" type="button" aria-label="Close menu">✕</button>
+    <div class="actions">
+      <div class="new-menu">
+        <button id="new-button" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="new-items">+ New</button>
+        <div class="menu" id="new-items" role="menu" hidden>
+          <button id="new-node" type="button" role="menuitem">Node</button>
+          <button id="new-box" type="button" role="menuitem">Box</button>
+          <button id="new-ghost" type="button" role="menuitem">From another view…</button>
+        </div>
+      </div>
+      <button id="rename" type="button" disabled>Rename</button>
+      <button id="delete" type="button" disabled>Delete</button>
+    </div>
+    <label class="move-row" id="move-row" hidden>
+      <span>Box</span>
+      <select id="move-to"></select>
+    </label>
+    <div class="picker" id="ghost-picker" hidden>
+      <div class="picker-head">
+        <input id="ghost-search" type="search" placeholder="Find a node in another view" aria-label="Find a node in another view">
+        <button id="ghost-close" type="button">Close</button>
+      </div>
+      <div class="picker-list" id="ghost-list"></div>
+    </div>
+    <div class="link-row" id="link-row" hidden>
+      <label><span>Opens</span><select id="opens"></select></label>
+      <button id="add-detail" type="button">Add detail view</button>
+      <button id="to-view" type="button">Turn into view</button>
+    </div>
+    <div class="row-line" id="row-line" hidden>
+      <span id="row-text"></span>
+      <button id="leave-row" type="button">Leave row</button>
+    </div>
+    <div class="style-row">
+      <div id="style-bar"></div>
+      <span class="hint">Select a node, arrow or box to style it</span>
+    </div>
+    <div class="debug" id="debug" hidden>
+      <div class="debug-head">DOT source, for debugging. Edits here are checked like any other change.</div>
+      <textarea id="source" spellcheck="false" aria-label="DOT source"></textarea>
+    </div>
+  </div>
+</main>
+<div class="context-menu" id="context-menu" role="menu" hidden></div>
+<div class="prompt-card" id="prompt" role="alertdialog" aria-live="assertive" hidden></div>
+<footer>
+  <span id="status" role="status">Loading Graphviz…</span>
+  <span id="selection"></span>
+  <span id="saved" class="saved"></span>
+  <button id="debug-toggle" type="button" aria-controls="debug" aria-expanded="false">Show DOT</button>
+</footer>
+<script src="/viz.js"></script>
+<script type="module">
+import { createDotCanvas } from '../lib/dot-canvas.js'
+import { createDotDocument, vizValidator } from '../lib/dot-document.js'
+import { openLibrary, createAutosaver, linkFor, idFromLink } from '../lib/library-store.js'
+import { exportDot } from '../lib/dot-export.js'
+import { createStyleBar } from '../lib/dot-style-bar.js'
+import { themeSvg } from '../lib/dot-theme.js'
+import { resolveClasses } from '../lib/palette.js'
+import { HOUSE_LAYOUT, HOUSE_DEFAULTS, HOUSE_CSS } from '../lib/house-style.js'
+import { describe, newNodeId, viewIdFor, applyEdit, decodeText, encodeText } from '../lib/dot-text.js'
+import { renderMarkdown } from '../lib/markdown.js'
+import { repairGhosts, impliedEdit } from '../lib/dot-views.js'
+import { views, ancestry, viewText, viewRules, expandEdit, copiesOf, ghostCandidates, wholeMap, routeMapEdit, MAP_ID, legend, legendEdit, classesInUse } from '../lib/dot-views.js'
+import { DEFAULT_PALETTE } from '../lib/palette.js'
+import { themeCss } from '../lib/dot-theme.js'
+
+const SAMPLE = `digraph checkout {
+  title="Checkout"
+  rankdir=LR
+
+  subgraph cluster_store {
+    label="Store"
+    style=dashed
+    cart [label="Cart"]
+    pay [label="Payment"]
+  }
+  browse [label="Browse"]
+  done [label="Order placed", class=green]
+
+  browse -> cart [label="add"]
+  cart -> pay [label="checkout"]
+  pay -> done [label="paid"]
+  pay -> cart [label="declined", style=dashed]
+}
+`
+
+const sourceField = document.getElementById('source')
+const status = document.getElementById('status')
+const selectionLabel = document.getElementById('selection')
+const undoButton = document.getElementById('undo')
+const redoButton = document.getElementById('redo')
+const debugPanel = document.getElementById('debug')
+const debugToggle = document.getElementById('debug-toggle')
+
+function showStatus(message, isError = false) {
+  status.textContent = message
+  status.classList.toggle('error', isError)
+}
+
+function refuse(error) {
+  showStatus(`Not changed: ${error.message.split('\n')[0]}`, true)
+}
+
+const houseStyle = document.createElement('style')
+houseStyle.textContent = HOUSE_CSS
+document.head.append(houseStyle)
+
+const viz = await Viz.instance()
+const graphviz = vizValidator(viz)
+const savedLabel = document.getElementById('saved')
+const params = new URLSearchParams(location.search)
+const linkedRouting = () => !embedded && library.kind === 'server'
+const pathFor = (id, title, view) => `/d/${linkFor(id, title)}${view ? `#${view}` : ''}`
+function idInAddress() {
+  const fromPath = /^\/d\/([^/.]+)$/.exec(location.pathname)
+  if (fromPath != null) return idFromLink(fromPath[1])
+  return params.get('doc')
+}
+const embedded = window.top !== window
+const library = await openLibrary()
+let autosave = null
+let openId = null
+const validate = text => {
+  viewRules(text)
+  graphviz(text)
+}
+function prepare(text) {
+  validate(text)
+  const repair = repairGhosts(text)
+  if (repair == null) return text
+  const repaired = applyEdit(text, repair)
+  validate(repaired)
+  return repaired
+}
+function showSaved({ ok }) {
+  savedLabel.textContent = ok ? `Saved to ${library.describe(openId)}` : 'Not saved'
+  savedLabel.classList.toggle('error', !ok)
+}
+const initialText = SAMPLE
+let canvas = null
+let current = views(initialText)[0].id
+let lastText = initialText
+let map = null
+let mapRoot = null
+let mapDepth = Number.POSITIVE_INFINITY
+const mapOverrides = new Map()
+const inMap = () => current === MAP_ID
+
+function refreshMap() {
+  if (!views(dot.text).some(view => view.id === mapRoot)) mapRoot = views(dot.text)[0].id
+  map = wholeMap(dot.text, { root: mapRoot, depth: mapDepth, overrides: mapOverrides })
+  canvas.setSource(map.dot)
+}
+
+function changedView(before, after) {
+  for (const view of views(after)) {
+    let was = null
+    try {
+      was = viewText(before, view.id)
+    } catch {}
+    if (was !== viewText(after, view.id)) return view.id
+  }
+  return null
+}
+
+const dot = createDotDocument(initialText, {
+  validate,
+  onChange: (text, { cause }) => {
+    if (cause === 'load') {
+      lastText = text
+      sourceField.value = text
+      sourceField.classList.remove('invalid')
+      undoButton.disabled = true
+      redoButton.disabled = true
+      return
+    }
+    followTitle(lastText, text)
+    autosave?.save(text)
+    const ids = views(text).map(view => view.id)
+    if (inMap()) {
+      lastText = text
+      sourceField.value = text
+      sourceField.classList.remove('invalid')
+      undoButton.disabled = !dot.canUndo
+      redoButton.disabled = !dot.canRedo
+      showStatus('')
+      refreshMap()
+      showView()
+      return
+    }
+    let next = current
+    if (cause === 'undo' || cause === 'redo') next = changedView(lastText, text) ?? current
+    if (!ids.includes(next)) next = views(text).find(view => view.id === views(lastText).find(old => old.id === current)?.parent)?.id ?? ids[0]
+    lastText = text
+    sourceField.value = text
+    sourceField.classList.remove('invalid')
+    undoButton.disabled = !dot.canUndo
+    redoButton.disabled = !dot.canRedo
+    showStatus('')
+    if (next !== current) navigate(next)
+    else {
+      canvas.setSource(text)
+      showView()
+    }
+  },
+})
+
+function withGraph(edit) {
+  if (edit.type === 'batch') return { ...edit, edits: edit.edits.map(withGraph) }
+  return edit.graph == null && !['addView', 'removeView', 'renameView'].includes(edit.type) ? { ...edit, graph: current } : edit
+}
+
+function linkOfNode(id, graph = current) {
+  const url = describe(dot.text, { graph }).nodes.get(id)?.attrs.URL
+  return typeof url === 'string' && url.startsWith('#') ? url.slice(1) : null
+}
+
+const prompt = document.getElementById('prompt')
+
+function ask(message, choices) {
+  return new Promise(resolve => {
+    showStatus('')
+    const text = document.createElement('span')
+    text.textContent = message
+    const buttons = choices.map(([value, label, danger]) => {
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.textContent = label
+      if (danger) button.className = 'danger'
+      button.addEventListener('click', () => {
+        prompt.hidden = true
+        prompt.replaceChildren()
+        resolve(value)
+      })
+      return button
+    })
+    const row = document.createElement('div')
+    row.className = 'choices'
+    row.append(...buttons)
+    prompt.replaceChildren(text, row)
+    prompt.hidden = false
+    const anchor = document.querySelector('#canvas .dc-selected')?.getBoundingClientRect() ?? null
+    const canvasArea = document.getElementById('canvas').getBoundingClientRect()
+    const area = canvasArea.width > 0 ? canvasArea : { top: 64, left: 0, width: innerWidth }
+    const { width, height } = prompt.getBoundingClientRect()
+    let top = anchor != null ? anchor.bottom + 12 : area.top + 16
+    if (anchor != null && top + height > innerHeight - 8) top = Math.max(8, anchor.top - height - 12)
+    const centre = anchor != null ? anchor.left + anchor.width / 2 : area.left + area.width / 2
+    prompt.style.top = `${top}px`
+    prompt.style.left = `${Math.max(8, Math.min(centre - width / 2, innerWidth - width - 8))}px`
+    const cancel = choices.find(([value]) => value === 'cancel')
+    const onKey = event => {
+      if (event.key !== 'Escape' || prompt.hidden) return
+      event.stopPropagation()
+      prompt.hidden = true
+      prompt.replaceChildren()
+      document.removeEventListener('keydown', onKey, true)
+      resolve(cancel?.[0] ?? 'cancel')
+    }
+    document.addEventListener('keydown', onKey, true)
+    for (const button of buttons) button.addEventListener('click', () => document.removeEventListener('keydown', onKey, true))
+    buttons[0].focus()
+  })
+}
+
+function titleOf(id) {
+  return views(dot.text).find(view => view.id === id)?.title ?? id
+}
+
+async function apply(edit) {
+  let routed
+  try {
+    routed = edit.type === 'setGraphAttr' && edit.key === 'legend' ? edit : inMap() ? routeMapEdit(dot.text, map, edit) : withGraph(edit)
+  } catch (error) {
+    return refuse(error)
+  }
+  let next = impliedEdit(dot.text, routed)
+  if (next.type === 'removeNode') {
+    const view = linkOfNode(next.node, next.graph)
+    const ghost = String(describe(dot.text, { graph: next.graph }).nodes.get(next.node)?.attrs.class ?? '').split(/\s+/).includes('ghost')
+    if (view != null && !ghost) {
+      const nodes = describe(dot.text, { graph: view }).nodes.size
+      const choice = await ask(`This node opens the view "${titleOf(view)}" (${nodes} ${nodes === 1 ? 'node' : 'nodes'}).`, [
+        ['node', 'Delete node only'],
+        ['both', 'Delete node and view', true],
+        ['cancel', 'Cancel'],
+      ])
+      if (choice === 'cancel') return
+      if (choice === 'both') next = { type: 'batch', edits: [next, { type: 'removeView', view }] }
+    }
+  }
+  const before = canvas.selection
+  const result = dot.apply(next)
+  if (!result.ok) return refuse(result.error)
+  if (before?.kind === 'node') {
+    const flat = next.type === 'batch' ? next.edits : [next]
+    const [view, id] = inMap() ? before.id.split('::') : [current, before.id]
+    const renamed = flat.find(inner => inner.type === 'renameNode' && inner.node === id && inner.graph === view)
+    if (renamed != null) canvas.select({ kind: 'node', id: inMap() ? `${view}::${renamed.to}` : renamed.to })
+  }
+  const added = inMap() && edit.type === 'batch' ? (routed.type === 'batch' ? routed.edits : [routed]).find(inner => inner.type === 'addNode') : null
+  if (added != null) {
+    const target = { kind: 'node', id: `${added.graph}::${added.node}` }
+    canvas.select(target)
+    canvas.editLabel(target)
+  }
+}
+
+const crumbs = document.getElementById('crumbs')
+const viewHead = document.getElementById('view-head')
+
+function crumbButton(view, here) {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.textContent = view.title
+  if (here) button.setAttribute('aria-current', 'page')
+  else button.addEventListener('click', () => navigate(view.id))
+  return button
+}
+
+function editInPlace(button, value, multiline, className, save, { rows = 2, enterSaves = true } = {}) {
+  const field = document.createElement(multiline ? 'textarea' : 'input')
+  field.className = className
+  field.value = value
+  if (multiline) field.rows = rows
+  button.replaceWith(field)
+  field.focus()
+  field.select()
+  let done = false
+  const finish = commit => {
+    if (done) return
+    done = true
+    if (commit && field.value.trim() !== value) save(field.value.trim())
+    else showView()
+  }
+  field.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && (enterSaves ? !event.shiftKey : event.metaKey || event.ctrlKey)) {
+      event.preventDefault()
+      finish(true)
+    }
+    if (event.key === 'Escape') finish(false)
+  })
+  field.addEventListener('blur', () => finish(true))
+}
+
+function showMapHead(list) {
+  crumbs.replaceChildren()
+  viewHead.hidden = false
+  const rootView = list.find(view => view.id === mapRoot)
+  const spacer = document.createElement('span')
+  spacer.className = 'spacer'
+  crumbs.append(spacer, viewPicker(list))
+  viewHead.replaceChildren()
+  const title = document.createElement('span')
+  title.className = 'title'
+  title.id = 'view-title'
+  title.textContent = 'Whole map'
+  const caption = document.createElement('span')
+  caption.className = 'caption'
+  caption.textContent = `Everything under "${rootView.title}". Click a thick border to open or close that part.`
+  const fullyOpen = map.expanded.length >= wholeMap(dot.text, { root: mapRoot }).expanded.length
+  const toggle = document.createElement('button')
+  toggle.type = 'button'
+  toggle.id = 'map-toggle'
+  toggle.className = 'map-toggle'
+  toggle.textContent = fullyOpen ? 'Collapse all' : 'Expand all'
+  toggle.hidden = wholeMap(dot.text, { root: mapRoot }).expanded.length === 0
+  toggle.addEventListener('click', () => {
+    mapDepth = fullyOpen ? 0 : Number.POSITIVE_INFINITY
+    mapOverrides.clear()
+    refreshMap()
+    showView()
+  })
+  viewHead.append(title, caption, toggle)
+}
+
+function viewPicker(list) {
+  const picker = document.createElement('select')
+  picker.id = 'view-picker'
+  picker.setAttribute('aria-label', 'Go to view')
+  picker.append(...list.map(view => new Option(view.title, view.id)), new Option('Whole map', MAP_ID))
+  picker.value = current
+  picker.addEventListener('change', () => navigate(picker.value))
+  return picker
+}
+
+const legendStrip = document.getElementById('legend')
+
+function showLegend() {
+  const named = legend(dot.text)
+  const used = classesInUse(dot.text, { only: inMap() ? map.expanded : [current] })
+  const shown = DEFAULT_PALETTE.filter(entry => used.has(entry.class))
+  legendStrip.replaceChildren()
+  legendStrip.hidden = shown.length === 0
+  for (const entry of shown) {
+    const chip = document.createElement('span')
+    chip.className = 'chip'
+    const swatch = document.createElement('span')
+    swatch.className = 'swatch'
+    swatch.style.background = themeCss(entry.fill.light, 'surface')
+    swatch.style.borderColor = themeCss(entry.line.light, 'ink')
+    const label = named.get(entry.class)?.label
+    const name = document.createElement('button')
+    name.type = 'button'
+    name.dataset.class = entry.class
+    name.className = label ? '' : 'unnamed'
+    name.textContent = label || entry.name
+    name.title = label ? `Rename "${label}"` : `Name what ${entry.name} means`
+    name.addEventListener('click', () => {
+      const field = document.createElement('input')
+      field.value = label ?? ''
+      field.placeholder = entry.name
+      field.setAttribute('aria-label', `Legend name for ${entry.name}`)
+      name.replaceWith(field)
+      field.focus()
+      let done = false
+      const finish = commit => {
+        if (done) return
+        done = true
+        if (commit && field.value.trim() !== (label ?? '')) apply(legendEdit(dot.text, entry.class, field.value))
+        else showLegend()
+      }
+      field.addEventListener('keydown', event => {
+        if (event.key === 'Enter') finish(true)
+        if (event.key === 'Escape') finish(false)
+      })
+      field.addEventListener('blur', () => finish(true))
+    })
+    chip.append(swatch, name)
+    legendStrip.append(chip)
+  }
+}
+
+const viewTextArea = document.getElementById('view-text')
+
+function showViewText(here) {
+  viewTextArea.replaceChildren()
+  viewTextArea.hidden = here == null
+  if (here == null) return
+  for (const [key, empty] of [['caption', 'Add a caption: how to read this view'], ['notes', 'Add notes']]) {
+    const value = decodeText(here[key] ?? '')
+    const block = document.createElement('div')
+    block.className = `text-block ${key}${value ? '' : ' empty'}`
+    block.id = `view-${key}`
+    block.tabIndex = 0
+    block.setAttribute('role', 'button')
+    block.title = `Edit the ${key} (Markdown)`
+    if (value) block.innerHTML = renderMarkdown(value)
+    else block.textContent = empty
+    const edit = event => {
+      if (event.target.closest?.('a')) return
+      editInPlace(block, value, true, 'text-input', next => apply({ type: 'setGraphAttr', key, value: next ? encodeText(next) : null }), { rows: Math.max(3, value.split('\n').length + 1), enterSaves: false })
+    }
+    block.addEventListener('click', edit)
+    block.addEventListener('keydown', event => {
+      if (event.target === block && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault()
+        edit(event)
+      }
+    })
+    viewTextArea.append(block)
+  }
+  const hint = document.createElement('div')
+  hint.className = 'text-hint'
+  hint.textContent = 'Markdown works here. ⌘/Ctrl+Enter saves, Esc cancels.'
+  viewTextArea.append(hint)
+}
+
+function showView() {
+  const list = views(dot.text)
+  showLegend()
+  if (inMap()) showViewText(null)
+  if (inMap()) return showMapHead(list)
+  const here = list.find(view => view.id === current)
+  const chain = ancestry(list, current)
+  crumbs.replaceChildren()
+  viewHead.replaceChildren()
+  viewHead.hidden = true
+  if (chain.length > 1) {
+    for (const view of chain.slice(0, -1)) {
+      crumbs.append(crumbButton(view, false))
+      const sep = document.createElement('span')
+      sep.className = 'sep'
+      sep.textContent = '›'
+      crumbs.append(sep)
+    }
+    const title = document.createElement('button')
+    title.type = 'button'
+    title.className = 'title'
+    title.id = 'view-title'
+    title.textContent = here.title
+    title.title = 'Rename this view'
+    title.setAttribute('aria-current', 'page')
+    title.addEventListener('click', () => editInPlace(title, here.title, false, 'title-input', value => apply({ type: 'setGraphAttr', key: 'title', value: value || null })))
+    crumbs.append(title)
+  }
+  const spacer = document.createElement('span')
+  spacer.className = 'spacer'
+  crumbs.append(spacer)
+  if (chain.length > 1) {
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.className = 'delete-view'
+    remove.id = 'delete-view'
+    remove.textContent = 'Delete view'
+    remove.addEventListener('click', async () => {
+      const choice = await ask(`Delete the view "${here.title}"? Links to it are removed and its views move up a level.`, [
+        ['delete', 'Delete view', true],
+        ['cancel', 'Cancel'],
+      ])
+      if (choice === 'delete') apply({ type: 'removeView', view: current })
+    })
+    crumbs.append(remove)
+  }
+  if (list.length > 1) crumbs.append(viewPicker(list))
+  showViewText(here)
+}
+
+function navigate(view) {
+  if (view === MAP_ID) {
+    if (!inMap()) {
+      const chain = ancestry(views(dot.text), current)
+      mapRoot = chain[0]?.id ?? views(dot.text)[0].id
+      mapDepth = Number.POSITIVE_INFINITY
+      mapOverrides.clear()
+    }
+    current = MAP_ID
+    canvas.setGraph(MAP_ID)
+    refreshMap()
+    showView()
+    if (location.hash.slice(1) !== MAP_ID) location.hash = MAP_ID
+    return
+  }
+  if (!views(dot.text).some(candidate => candidate.id === view)) return
+  current = view
+  canvas.setGraph(view)
+  canvas.setSource(dot.text)
+  showView()
+  if (location.hash.slice(1) !== view) location.hash = view
+}
+
+window.addEventListener('hashchange', () => {
+  const view = decodeURIComponent(location.hash.slice(1))
+  if (openId != null && view !== '' && view !== current) navigate(view)
+})
+
+const styleBar = createStyleBar(document.getElementById('style-bar'), { onEdit: apply, classLabel: name => legend(dot.text).get(name)?.label ?? null })
+const newButton = document.getElementById('new-button')
+const newItems = document.getElementById('new-items')
+const renameButton = document.getElementById('rename')
+const deleteButton = document.getElementById('delete')
+const moveRow = document.getElementById('move-row')
+const moveTo = document.getElementById('move-to')
+let selected = null
+
+const rowLine = document.getElementById('row-line')
+const rowText = document.getElementById('row-text')
+
+function showRow(target) {
+  rowLine.hidden = target?.kind !== 'node' || target.row == null
+  if (rowLine.hidden) return
+  const model = describe(dot.text, { graph: current })
+  const name = id => {
+    const label = model.nodes.get(id)?.attrs.label
+    return typeof label === 'string' ? label.replace(/\\n/g, ' ') : id
+  }
+  rowText.textContent = `In a row: ${model.rows.get(target.row).map(name).join(' → ')}`
+}
+
+document.getElementById('leave-row').addEventListener('click', () => {
+  if (selected?.kind === 'node') apply({ type: 'leaveRow', node: selected.id })
+})
+
+const linkRow = document.getElementById('link-row')
+const opens = document.getElementById('opens')
+const addDetail = document.getElementById('add-detail')
+const toView = document.getElementById('to-view')
+
+function showLinks(target) {
+  linkRow.hidden = target?.kind !== 'node' && target?.kind !== 'cluster'
+  if (linkRow.hidden) return
+  const others = views(dot.text).filter(view => view.id !== current)
+  opens.replaceChildren(new Option('Nothing', ''), ...others.map(view => new Option(view.title, view.id)))
+  opens.value = target.link ?? ''
+  opens.disabled = target.ghost === true
+  addDetail.hidden = target.kind !== 'node' || target.link != null || target.ghost === true
+  toView.hidden = target.kind !== 'cluster'
+}
+
+opens.addEventListener('change', () => {
+  if (selected == null) return
+  const where = selected.kind === 'node' ? { node: selected.id } : { subgraph: selected.id }
+  apply({ type: 'setLink', ...where, view: opens.value === '' ? null : opens.value })
+})
+
+addDetail.addEventListener('click', () => {
+  if (selected?.kind !== 'node') return
+  const label = describe(dot.text, { graph: current }).nodes.get(selected.id)?.attrs.label
+  const title = String(typeof label === 'string' ? label : selected.id).split('\\n')[0]
+  const view = viewIdFor(dot.text, title)
+  const parent = current
+  const result = dot.apply({ type: 'batch', edits: [{ type: 'addView', view, title, parent }, { type: 'setLink', graph: parent, node: selected.id, view }] })
+  if (!result.ok) return refuse(result.error)
+  navigate(view)
+  showStatus(`Made the view "${title}". Use the breadcrumb to go back.`)
+})
+
+toView.addEventListener('click', () => {
+  if (selected?.kind !== 'cluster') return
+  const before = new Set(views(dot.text).map(view => view.id))
+  const result = dot.apply({ type: 'clusterToView', graph: current, cluster: selected.id })
+  if (!result.ok) return refuse(result.error)
+  const made = views(dot.text).find(view => !before.has(view.id))
+  const node = [...describe(dot.text, { graph: current }).nodes.values()].find(candidate => candidate.attrs.URL === `#${made.id}`)
+  if (node != null) canvas.select({ kind: 'node', id: node.id })
+  showStatus(`"${made.title}" is now its own view. Click its thick border to open it.`)
+})
+
+function showBoxPicker(target) {
+  moveRow.hidden = target?.kind !== 'node' && target?.kind !== 'cluster'
+  if (moveRow.hidden) return
+  const all = [...describe(dot.text, { graph: current }).subgraphs.values()].filter(subgraph => subgraph.isCluster)
+  const within = id => {
+    for (let current = id; current != null; current = all.find(box => box.id === current)?.parent) if (current === target.id) return true
+    return false
+  }
+  const boxes = target.kind === 'cluster' ? all.filter(box => !within(box.id)) : all
+  moveTo.replaceChildren(new Option('No box', ''), ...boxes.map(box => new Option(typeof box.attrs.label === 'string' ? box.attrs.label : box.id, box.id)))
+  moveTo.value = target.cluster ?? ''
+}
+
+moveTo.addEventListener('change', () => {
+  const to = moveTo.value === '' ? null : moveTo.value
+  if (selected?.kind === 'node') apply({ type: 'moveNode', node: selected.id, to })
+  if (selected?.kind === 'cluster') apply({ type: 'moveCluster', cluster: selected.id, to })
+})
+canvas = createDotCanvas(document.getElementById('canvas'), {
+  render: text => themeSvg(viz.renderSVGElement(resolveClasses(inMap() ? text : viewText(text, current)), HOUSE_LAYOUT)),
+  graph: current,
+  defaults: HOUSE_DEFAULTS,
+  onEdit: apply,
+  onContextMenu: openContextMenu,
+  onOpen: view => openLink(view),
+  onToolChange: showTool,
+  onSelect: target => {
+    selected = target
+    renameButton.disabled = target == null || target.editable === false
+    deleteButton.disabled = target == null || target.kind === 'cluster' || target.editable === false
+    styleBar.show(target)
+    if (inMap()) {
+      moveRow.hidden = true
+      linkRow.hidden = true
+      rowLine.hidden = true
+    } else {
+      showBoxPicker(target)
+      showLinks(target)
+      showRow(target)
+    }
+    if (target == null) selectionLabel.textContent = ''
+    else if (target.kind === 'edge') selectionLabel.textContent = `${target.from} → ${target.to}`
+    else selectionLabel.textContent = `${target.kind === 'cluster' ? 'box' : 'node'}: ${target.id}`
+  },
+})
+
+const BOX_HELP = 'Drag around nodes or boxes to group them, or tap to make an empty box.'
+
+function setMenu(open) {
+  newItems.hidden = !open
+  newButton.setAttribute('aria-expanded', String(open))
+}
+
+function showTool(tool) {
+  const drawing = tool === 'box'
+  newButton.textContent = drawing ? 'Cancel box' : '+ New'
+  newButton.setAttribute('aria-pressed', String(drawing))
+  if (drawing) showStatus(BOX_HELP)
+  else if (status.textContent === BOX_HELP) showStatus('')
+}
+
+newButton.addEventListener('click', () => {
+  if (canvas.tool === 'box') {
+    canvas.setTool('select')
+    return
+  }
+  setMenu(newItems.hidden)
+})
+document.addEventListener('click', event => {
+  if (!event.target.closest('.new-menu')) setMenu(false)
+})
+document.getElementById('new-box').addEventListener('click', () => {
+  setMenu(false)
+  canvas.setTool('box')
+})
+function newNode(inBox = null) {
+  let graph = current
+  let subgraph
+  if (inMap()) {
+    const owner = inBox != null ? map.owners.boxes.get(inBox) : selected != null && selected.kind !== 'edge' ? map.owners.nodes.get(selected.id) ?? map.owners.boxes.get(selected.id) : null
+    graph = owner?.view ?? mapRoot
+    subgraph = owner?.cluster
+  } else subgraph = inBox ?? undefined
+  const node = newNodeId(dot.text, { graph })
+  const result = dot.apply({ type: 'addNode', graph, node, subgraph, attrs: { label: 'New node' } })
+  if (!result.ok) return refuse(result.error)
+  const target = { kind: 'node', id: inMap() ? `${graph}::${node}` : node }
+  canvas.select(target)
+  canvas.editLabel(target)
+}
+
+function openLink(view) {
+  if (!inMap()) return navigate(view)
+  mapOverrides.set(view, !map.expanded.includes(view))
+  refreshMap()
+  showView()
+}
+
+const contextMenu = document.getElementById('context-menu')
+
+function closeContextMenu() {
+  contextMenu.hidden = true
+  contextMenu.replaceChildren()
+}
+
+function showMenu(clientX, clientY, items) {
+  contextMenu.replaceChildren(...items.map(item => {
+    if (item == null) return document.createElement('hr')
+    const [label, id, run] = item
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.setAttribute('role', 'menuitem')
+    button.dataset.action = id
+    button.textContent = label
+    button.addEventListener('click', () => {
+      closeContextMenu()
+      run()
+    })
+    return button
+  }))
+  contextMenu.hidden = false
+  const { width, height } = contextMenu.getBoundingClientRect()
+  contextMenu.style.left = `${Math.max(8, Math.min(clientX, innerWidth - width - 8))}px`
+  contextMenu.style.top = `${Math.max(8, Math.min(clientY, innerHeight - height - 8))}px`
+  contextMenu.querySelector('button')?.focus()
+}
+
+function openContextMenu({ clientX, clientY, target, link }) {
+  setMenu(false)
+  const items = []
+  if (target?.kind === 'node') {
+    items.push(['New connected node', 'connected', () => canvas.addConnected(target)])
+    if (link != null) items.push([inMap() ? 'Open or close in map' : 'Open view', 'open', () => openLink(link)])
+    items.push(['Rename', 'rename', () => canvas.editLabel(target)])
+    items.push(['Delete', 'delete', () => apply({ type: 'removeNode', node: target.id })])
+    items.push(null)
+  }
+  const inBox = target?.kind === 'cluster' ? target.id : null
+  items.push([inBox ? 'New node in this box' : 'New node', 'new-node', () => newNode(inBox)])
+  items.push(['New box', 'new-box', () => canvas.setTool('box')])
+  if (!inMap()) items.push(['From another view…', 'new-ghost', () => document.getElementById('new-ghost').click()])
+  showMenu(clientX, clientY, items)
+}
+
+document.addEventListener('pointerdown', event => {
+  if (!contextMenu.hidden && !contextMenu.contains(event.target)) closeContextMenu()
+})
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && !contextMenu.hidden) closeContextMenu()
+})
+
+document.getElementById('new-node').addEventListener('click', () => {
+  setMenu(false)
+  newNode()
+})
+
+const ghostPicker = document.getElementById('ghost-picker')
+const ghostSearch = document.getElementById('ghost-search')
+const ghostList = document.getElementById('ghost-list')
+
+function fillGhostList() {
+  const query = ghostSearch.value.trim().toLowerCase()
+  const candidates = ghostCandidates(dot.text, current).filter(candidate => query === '' || `${candidate.label} ${candidate.viewTitle}`.toLowerCase().includes(query))
+  ghostList.replaceChildren()
+  if (candidates.length === 0) {
+    const empty = document.createElement('div')
+    empty.className = 'empty'
+    empty.textContent = views(dot.text).length < 2 ? 'There are no other views yet.' : 'Nothing matches.'
+    ghostList.append(empty)
+    return
+  }
+  let heading = null
+  for (const candidate of candidates) {
+    if (candidate.viewTitle !== heading) {
+      heading = candidate.viewTitle
+      const title = document.createElement('h3')
+      title.textContent = heading
+      ghostList.append(title)
+    }
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = candidate.here ? `${candidate.label} (already here)` : candidate.label
+    button.disabled = candidate.here
+    button.dataset.node = candidate.node
+    button.dataset.view = candidate.view
+    button.addEventListener('click', () => {
+      const result = dot.apply({ type: 'addGhost', graph: current, node: candidate.node, from: candidate.view })
+      if (!result.ok) return refuse(result.error)
+      ghostPicker.hidden = true
+      canvas.select({ kind: 'node', id: candidate.node })
+      showStatus(`Showing "${candidate.label}" from "${candidate.viewTitle}" here. Click its border to go there.`)
+    })
+    ghostList.append(button)
+  }
+}
+
+document.getElementById('new-ghost').addEventListener('click', () => {
+  setMenu(false)
+  if (inMap()) return showStatus('Open a view to add something from another view.')
+  ghostSearch.value = ''
+  ghostPicker.hidden = false
+  fillGhostList()
+  ghostSearch.focus()
+})
+ghostSearch.addEventListener('input', fillGhostList)
+document.getElementById('ghost-close').addEventListener('click', () => {
+  ghostPicker.hidden = true
+})
+
+renameButton.addEventListener('click', () => {
+  if (selected != null) canvas.editLabel(selected)
+})
+deleteButton.addEventListener('click', () => {
+  if (selected?.kind === 'node') apply({ type: 'removeNode', node: selected.id })
+  if (selected?.kind === 'edge') apply({ type: 'removeEdge', edge: { from: selected.from, to: selected.to, index: selected.index } })
+})
+
+let typing = null
+sourceField.addEventListener('input', () => {
+  clearTimeout(typing)
+  typing = setTimeout(() => {
+    const result = dot.replace(sourceField.value)
+    sourceField.classList.toggle('invalid', !result.ok)
+    if (!result.ok) refuse(result.error)
+  }, 300)
+})
+
+undoButton.addEventListener('click', () => dot.undo())
+redoButton.addEventListener('click', () => dot.redo())
+document.addEventListener('keydown', event => {
+  if (event.target === sourceField || !(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'z') return
+  event.preventDefault()
+  if (event.shiftKey) dot.redo()
+  else dot.undo()
+})
+
+function setDebug(open) {
+  debugPanel.hidden = !open
+  debugToggle.textContent = open ? 'Hide DOT' : 'Show DOT'
+  debugToggle.setAttribute('aria-expanded', String(open))
+  try {
+    localStorage.setItem('dot-playground-debug', open ? '1' : '')
+  } catch {}
+}
+debugToggle.addEventListener('click', () => setDebug(debugPanel.hidden))
+window.addEventListener('pagehide', () => autosave?.flush())
+let savedDebug = false
+try {
+  savedDebug = localStorage.getItem('dot-playground-debug') === '1'
+} catch {}
+setDebug(savedDebug)
+
+const sidePanel = document.querySelector('.side')
+const panelToggle = document.getElementById('panel-toggle')
+const panelLabel = panelToggle.querySelector('.panel-label')
+const scrim = document.getElementById('scrim')
+const phone = matchMedia('(max-width: 760px)')
+function setPanel(open, { remember = true } = {}) {
+  sidePanel.hidden = !open
+  scrim.hidden = !open || !phone.matches
+  panelLabel.textContent = phone.matches ? (open ? 'Close menu' : 'Menu') : open ? 'Hide panel' : 'Show panel'
+  panelToggle.setAttribute('aria-expanded', String(open))
+  if (!remember || phone.matches) return
+  try {
+    localStorage.setItem('dot-playground-panel', open ? '' : 'closed')
+  } catch {}
+}
+function desktopPanel() {
+  try {
+    return localStorage.getItem('dot-playground-panel') !== 'closed'
+  } catch {
+    return true
+  }
+}
+panelToggle.addEventListener('click', () => setPanel(sidePanel.hidden))
+scrim.addEventListener('click', () => setPanel(false))
+document.getElementById('drawer-close').addEventListener('click', () => setPanel(false))
+for (const id of ['rename', 'new-node', 'new-box', 'to-view', 'add-detail']) {
+  document.getElementById(id)?.addEventListener('click', () => {
+    if (phone.matches) setPanel(false)
+  })
+}
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && phone.matches && !sidePanel.hidden) setPanel(false)
+})
+phone.addEventListener('change', () => setPanel(phone.matches ? false : desktopPanel(), { remember: false }))
+setPanel(phone.matches ? false : desktopPanel(), { remember: false })
+
+sourceField.value = dot.text
+canvas.setSource(dot.text)
+showView()
+showStatus('')
+
+const libraryScreen = document.getElementById('library')
+const libraryGrid = document.getElementById('library-grid')
+const libraryNote = document.getElementById('library-note')
+const librarySearch = document.getElementById('library-search')
+const diagramName = document.getElementById('diagram-name')
+const thumbnails = new Map()
+let entries = []
+
+function noteLibrary(message, isError = false) {
+  libraryNote.textContent = message
+  libraryNote.classList.toggle('error', isError)
+}
+
+function titleOfText(text) {
+  try {
+    return views(text)[0]?.title ?? 'Untitled diagram'
+  } catch {
+    return 'Untitled diagram'
+  }
+}
+
+function rootGraph(text) {
+  return views(text)[0].id
+}
+
+function relativeTime(when) {
+  if (!when) return ''
+  const seconds = Math.round((Date.now() - when) / 1000)
+  if (seconds < 45) return 'just now'
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours} h ago`
+  const days = Math.round(hours / 24)
+  if (days < 30) return `${days} d ago`
+  return new Date(when).toLocaleDateString()
+}
+
+function thumbnailFor(entry) {
+  const key = `${entry.id}\u0000${entry.updated}\u0000${entry.text.length}`
+  if (thumbnails.has(key)) return thumbnails.get(key).cloneNode(true)
+  let element
+  try {
+    const svg = themeSvg(viz.renderSVGElement(resolveClasses(viewText(entry.text, rootGraph(entry.text))), HOUSE_LAYOUT))
+    const size = key => parseFloat(svg.getAttribute(key)) * (String(svg.getAttribute(key)).endsWith('pt') ? 4 / 3 : 1)
+    svg.style.maxWidth = `${size('width')}px`
+    svg.style.maxHeight = `${size('height')}px`
+    svg.removeAttribute('width')
+    svg.removeAttribute('height')
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+    svg.setAttribute('aria-hidden', 'true')
+    element = svg
+  } catch {
+    element = document.createElement('span')
+    element.className = 'thumb-empty'
+    element.textContent = 'No preview'
+  }
+  thumbnails.set(key, element)
+  return element.cloneNode(true)
+}
+
+function editTitleInCard(card, entry) {
+  const title = card.querySelector('.card-title')
+  const field = document.createElement('input')
+  field.className = 'card-rename'
+  field.value = titleOfText(entry.text)
+  field.setAttribute('aria-label', 'Diagram name')
+  title.replaceWith(field)
+  field.focus()
+  field.select()
+  let done = false
+  const finish = async commit => {
+    if (done) return
+    done = true
+    const value = field.value.trim()
+    if (commit && value !== '' && value !== titleOfText(entry.text)) await renameDiagram(entry, value)
+    renderLibrary()
+  }
+  field.addEventListener('keydown', event => {
+    if (event.key === 'Enter') finish(true)
+    if (event.key === 'Escape') finish(false)
+  })
+  field.addEventListener('blur', () => finish(true))
+}
+
+function retitled(text, title) {
+  return applyEdit(text, expandEdit(text, { type: 'setGraphAttr', graph: rootGraph(text), key: 'title', value: title }))
+}
+
+async function renameDiagram(entry, title) {
+  try {
+    await library.save(entry.id, retitled(entry.text, title))
+    noteLibrary(`Renamed to "${title}".`)
+  } catch (error) {
+    noteLibrary(`Couldn't rename it: ${error.message}`, true)
+  }
+}
+
+async function downloadDiagram(entry, theme = null) {
+  const name = linkFor(entry.id, titleOfText(entry.text))
+  const filename = theme == null ? `${name}.dot` : `${name}-${theme}.dot`
+  let data = entry.text
+  if (theme != null) {
+    try {
+      data = exportDot(entry.text, { theme })
+    } catch (error) {
+      return noteLibrary(`Couldn't export it: ${error.message}`, true)
+    }
+  }
+  const downloads = embedded ? await window.claude?.use?.('downloads') : null
+  if (downloads != null) {
+    try {
+      await downloads.save({ filename, data })
+    } catch {}
+    return
+  }
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(new Blob([data], { type: 'text/vnd.graphviz' }))
+  link.download = filename
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000)
+}
+
+async function copyText(text, done) {
+  try {
+    await navigator.clipboard.writeText(text)
+    done(true)
+  } catch {
+    window.prompt?.('Copy this link', text)
+    done(false)
+  }
+}
+
+function addressOf(entry, view = null) {
+  return `${location.origin}${pathFor(entry.id, titleOfText(entry.text), view)}`
+}
+
+async function deleteDiagram(entry) {
+  const where = library.kind === 'server' ? ' The server keeps it in its trash.' : ''
+  const choice = await ask(`Delete "${titleOfText(entry.text)}"?${where}`, [
+    ['delete', 'Delete', true],
+    ['cancel', 'Cancel'],
+  ])
+  if (choice !== 'delete') return
+  try {
+    await library.remove(entry.id)
+    noteLibrary(`Deleted "${titleOfText(entry.text)}".`)
+  } catch (error) {
+    noteLibrary(`Couldn't delete it: ${error.message}`, true)
+  }
+  renderLibrary()
+}
+
+async function addDiagram(text) {
+  return library.create(text)
+}
+
+async function duplicateDiagram(entry) {
+  const title = `${titleOfText(entry.text)} copy`
+  try {
+    await addDiagram(retitled(entry.text, title))
+    noteLibrary(`Made "${title}".`)
+  } catch (error) {
+    noteLibrary(`Couldn't duplicate it: ${error.message}`, true)
+  }
+  renderLibrary()
+}
+
+function card(entry) {
+  const article = document.createElement('article')
+  article.className = 'card'
+  article.dataset.id = entry.id
+  const open = document.createElement('button')
+  open.type = 'button'
+  open.className = 'card-open'
+  open.setAttribute('aria-label', `Open ${titleOfText(entry.text)}`)
+  const thumb = document.createElement('div')
+  thumb.className = 'thumb'
+  thumb.append(thumbnailFor(entry))
+  const meta = document.createElement('div')
+  meta.className = 'card-meta'
+  const title = document.createElement('span')
+  title.className = 'card-title'
+  title.textContent = titleOfText(entry.text)
+  const sub = document.createElement('span')
+  sub.className = 'card-sub'
+  let count = 0
+  try {
+    count = views(entry.text).length
+  } catch {}
+  sub.textContent = [`${count} ${count === 1 ? 'view' : 'views'}`, relativeTime(entry.updated)].filter(Boolean).join(' · ')
+  meta.append(title, sub)
+  open.append(thumb, meta)
+  open.addEventListener('click', () => openDiagram(entry.id))
+  const more = document.createElement('button')
+  more.type = 'button'
+  more.className = 'card-menu'
+  more.textContent = '⋯'
+  more.setAttribute('aria-label', `More for ${titleOfText(entry.text)}`)
+  more.addEventListener('click', event => {
+    event.stopPropagation()
+    const box = more.getBoundingClientRect()
+    showMenu(box.left, box.bottom + 4, [
+      ['Open', 'open', () => openDiagram(entry.id)],
+      ['Rename', 'rename', () => editTitleInCard(article, entry)],
+      ['Duplicate', 'duplicate', () => duplicateDiagram(entry)],
+      ...(linkedRouting() ? [
+        ['Copy link', 'copy-link', () => copyText(addressOf(entry), ok => noteLibrary(ok ? 'Link copied.' : addressOf(entry)))],
+        ['Copy drawing link (.svg)', 'copy-svg', () => copyText(`${location.origin}/d/${entry.id}.svg`, ok => noteLibrary(ok ? 'Drawing link copied.' : `${location.origin}/d/${entry.id}.svg`))],
+        null,
+      ] : []),
+      ['Download .dot', 'download', () => downloadDiagram(entry)],
+      ['Export for other viewers, light', 'export-light', () => downloadDiagram(entry, 'light')],
+      ['Export for other viewers, dark', 'export-dark', () => downloadDiagram(entry, 'dark')],
+      null,
+      ['Delete', 'delete', () => deleteDiagram(entry)],
+    ])
+  })
+  article.append(open, more)
+  return article
+}
+
+async function renderLibrary() {
+  try {
+    entries = (await library.list()).sort((a, b) => (b.updated ?? 0) - (a.updated ?? 0))
+  } catch (error) {
+    entries = []
+    noteLibrary(`Couldn't list diagrams: ${error.message}`, true)
+  }
+  const query = librarySearch.value.trim().toLowerCase()
+  const shown = entries.filter(entry => query === '' || titleOfText(entry.text).toLowerCase().includes(query) || entry.id.includes(query))
+  libraryGrid.replaceChildren(...shown.map(card))
+  document.getElementById('library-empty').hidden = entries.length > 0
+  document.getElementById('library-where').textContent = `Saved in ${library.describe()}`
+}
+
+async function showLibrary({ push = true } = {}) {
+  await autosave?.flush()
+  autosave = null
+  openId = null
+  closeContextMenu()
+  document.body.classList.add('in-library')
+  libraryScreen.hidden = false
+  document.title = 'Diagrams'
+  if (push && !embedded) history.pushState(null, '', linkedRouting() ? '/' : location.pathname)
+  await renderLibrary()
+}
+
+async function openDiagram(id, { push = true, view = null, fresh = false } = {}) {
+  await autosave?.flush()
+  let text
+  try {
+    text = fresh ? SAMPLE : await library.load(id)
+  } catch (error) {
+    noteLibrary(`Couldn't open it: ${error.message}`, true)
+    return showLibrary({ push })
+  }
+  if (text == null) {
+    noteLibrary(`There is no diagram "${id}".`, true)
+    return showLibrary({ push })
+  }
+  let ready
+  try {
+    ready = prepare(text)
+  } catch (error) {
+    noteLibrary(`"${id}" has a problem Graphviz can't draw: ${error.message.split('\n')[0]}`, true)
+    return showLibrary({ push })
+  }
+  openId = id
+  autosave = createAutosaver(library, id, { onSaved: showSaved })
+  savedLabel.textContent = ''
+  const result = dot.load(ready)
+  if (!result.ok) return refuse(result.error)
+  if (ready !== text || fresh) autosave.save(ready)
+  document.body.classList.remove('in-library')
+  libraryScreen.hidden = true
+  diagramName.textContent = titleOfText(ready)
+  document.title = titleOfText(ready)
+  mapRoot = null
+  current = null
+  const target = view != null && (view === MAP_ID || views(ready).some(candidate => candidate.id === view)) ? view : rootGraph(ready)
+  if (!embedded) history[push ? 'pushState' : 'replaceState'](null, '', linkedRouting() ? pathFor(id, titleOfText(ready), target) : `?doc=${encodeURIComponent(id)}#${target}`)
+  navigate(target)
+}
+
+function followTitle(before, after) {
+  let now
+  try {
+    if (titleOfText(before) === (now = titleOfText(after)) || openId == null) return
+  } catch {
+    return
+  }
+  diagramName.textContent = now
+  document.title = now
+  if (linkedRouting()) history.replaceState(null, '', pathFor(openId, now, location.hash.slice(1)))
+}
+
+async function newDiagram() {
+  const title = 'Untitled diagram'
+  const text = `digraph main {\n  title="${title}"\n  rankdir=LR\n}\n`
+  try {
+    await renderLibrary()
+    const id = await addDiagram(text)
+    await openDiagram(id)
+    renameFromHeader()
+  } catch (error) {
+    noteLibrary(`Couldn't make a diagram: ${error.message}`, true)
+  }
+}
+
+document.getElementById('library-new').addEventListener('click', newDiagram)
+document.getElementById('library-new-empty').addEventListener('click', newDiagram)
+document.getElementById('to-library').addEventListener('click', () => showLibrary())
+function renameFromHeader() {
+  const before = titleOfText(dot.text)
+  const field = document.createElement('input')
+  field.className = 'name-input'
+  field.value = before
+  field.setAttribute('aria-label', 'Diagram name')
+  diagramName.replaceWith(field)
+  field.focus()
+  field.select()
+  let done = false
+  const finish = commit => {
+    if (done) return
+    done = true
+    field.replaceWith(diagramName)
+    const value = field.value.trim()
+    if (commit && value !== '' && value !== before) apply({ type: 'setGraphAttr', graph: rootGraph(dot.text), key: 'title', value })
+  }
+  field.addEventListener('keydown', event => {
+    if (event.key === 'Enter') finish(true)
+    if (event.key === 'Escape') finish(false)
+  })
+  field.addEventListener('blur', () => finish(true))
+}
+document.getElementById('diagram-name').addEventListener('click', renameFromHeader)
+const copyLinkButton = document.getElementById('copy-link')
+copyLinkButton.hidden = !linkedRouting()
+copyLinkButton.addEventListener('click', () => {
+  const view = inMap() ? MAP_ID : current
+  copyText(addressOf({ id: openId, text: dot.text }, view), ok => {
+    copyLinkButton.textContent = ok ? 'Copied' : 'Copy link'
+    setTimeout(() => { copyLinkButton.textContent = 'Copy link' }, 1500)
+  })
+})
+librarySearch.addEventListener('input', () => renderLibrary())
+const fileInput = document.getElementById('library-file')
+document.getElementById('library-import').addEventListener('click', () => fileInput.click())
+fileInput.addEventListener('change', async () => {
+  const file = fileInput.files?.[0]
+  fileInput.value = ''
+  if (file == null) return
+  let text
+  try {
+    text = prepare(await file.text())
+  } catch (error) {
+    return noteLibrary(`Couldn't import ${file.name}: ${error.message.split('\n')[0]}`, true)
+  }
+  try {
+    await renderLibrary()
+    const id = await addDiagram(text)
+    noteLibrary(`Imported ${file.name}.`)
+    await openDiagram(id)
+  } catch (error) {
+    noteLibrary(`Couldn't import ${file.name}: ${error.message}`, true)
+  }
+})
+window.addEventListener('popstate', () => {
+  if (embedded) return
+  const id = idInAddress()
+  if (id == null) showLibrary({ push: false })
+  else if (id !== openId) openDiagram(id, { push: false, view: decodeURIComponent(location.hash.slice(1)) || null })
+})
+
+async function migrateOldDraft() {
+  if (library.kind === 'server') return
+  let old = null
+  try {
+    old = localStorage.getItem('dot-playground-draft')
+  } catch {}
+  if (old == null || (await library.list()).length > 0) return
+  try {
+    await addDiagram(prepare(old))
+    localStorage.removeItem('dot-playground-draft')
+  } catch {}
+}
+
+await migrateOldDraft()
+const startId = idInAddress()
+if (startId != null) await openDiagram(startId, { push: false, view: decodeURIComponent(location.hash.slice(1)) || null, fresh: params.has('fresh') })
+else await showLibrary({ push: false })
+</script>
+</body>
+</html>

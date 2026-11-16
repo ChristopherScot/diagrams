@@ -1,0 +1,73 @@
+# diagrams
+#
+# Include Makefile.local for service-specific setup; it survives regenerate.
+
+SHELL := /bin/bash
+.DEFAULT_GOAL := help
+
+PORT ?= 3000
+export PORT
+
+.PHONY: help
+help:
+	@echo "diagrams"
+	@echo
+	@echo "  make deps       install dependencies"
+	@echo "  make build      the production bundle"
+	@echo "  make test       typecheck and tests (what CI runs)"
+	@echo "  make run        start it on :$(PORT)"
+	@echo "  make regen      regenerate code derived from the spec"
+	@echo "  make clean      remove build output"
+ifneq (,$(wildcard Makefile.local))
+	@$(MAKE) --no-print-directory help-local 2>/dev/null || true
+endif
+
+.PHONY: deps
+deps: client node_modules
+# Order-only: under `make -j` an unordered prerequisite list lets the
+# service install while the client is mid-build, resolving `main` into
+# a half-written dist/.
+node_modules: package.json | client
+	npm install
+	@touch node_modules
+
+# Builds a generated client before tsc looks for it; the script says
+# how, and the Dockerfile runs the same one.
+#
+# A prerequisite of deps rather than of node_modules, because CI runs
+# `npm ci` itself before `make test`. node_modules then already exists,
+# that target is satisfied, and anything hanging off it never runs.
+.PHONY: client
+client:
+	@sh scripts/build-clients.sh
+
+.PHONY: build
+build: deps
+	npm run build
+
+.PHONY: test
+test: deps
+	npm run typecheck --if-present
+	npm test
+
+.PHONY: run
+run: deps
+	npm start
+
+# What the image runs, from an empty directory - the image copies only
+# dist/server.js, so a file read at runtime resolves here and 500s.
+.PHONY: run-dist
+run-dist: build
+	@tmp=$$(mktemp -d) && cp -R dist/server.js dist/web "$$tmp/" && cd "$$tmp" && PORT=$(PORT) node server.js
+
+.PHONY: regen
+regen:
+	@command -v homelabctl >/dev/null || { \
+		echo "homelabctl not found - https://github.com/ChristopherScot/homelabctl"; exit 1; }
+	@homelabctl regen
+
+.PHONY: clean
+clean:
+	rm -rf dist
+
+-include Makefile.local

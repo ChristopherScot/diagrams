@@ -1,0 +1,120 @@
+digraph checkout {
+  title="Checkout"
+  rankdir=LR
+
+  subgraph cluster_store {
+    label="Store"
+    style=dashed
+    cart [label="Cart"]
+    pay [label="Payment"]
+  }
+  done [label="Order placed", fillcolor="#e4f3e9"]
+
+  cart -> pay [label="checkout"]
+  pay -> done [label="paid"]
+  pay -> cart [label="declined", style=dashed]
+  node1 [label="node b", class=amber]
+  done -> node1
+  node2 [label="New node", class=amber]
+  node1 -> node2
+  node3 [label="New node", fillcolor="#e4f3e9"]
+  node1 -> node3
+  new_node_1 [label="New node 1", class=ghost, URL="#fun-stuff"]
+  node9 [label="New node", fillcolor="#e4f3e9"]
+  new_node_1 -> node9
+  new_node1 [label="New node1", fillcolor="#e4f3e9"]
+  node5 [label="New node", class=ghost, URL="#not-so-fun-stuff"]
+  node5 -> new_node1
+  node1 -> done
+  testing [label=testing, URL="#testing"]
+  node3 -> testing
+  node2 -> testing
+  node17 [label="New node", class=amber]
+  node17 -> node2
+  node18 [label="node a", class=amber]
+  node18 -> node2
+  node1 -> node18
+  new_node [label="New node"]
+  testing -> new_node
+  node1 -> node2 [dir=back]
+  new_node_1 -> new_node1 [dir=back]
+}
+
+digraph "fun-stuff" {
+  title="fun stuff"
+  parent=checkout
+  node6 [label="New node", class=ghost, URL="#not-so-fun-stuff"]
+  node12 [label="New node", fillcolor="#e4f3e9"]
+  new_node_1
+  node8
+  node10
+  new_node_1 [label="New node 1", fillcolor="#e4f3e9"]
+  node8 [label="New node", fillcolor="#e4f3e9"]
+  node10 [label="New node", fillcolor="#e4f3e9"]
+  node6 -> new_node_1
+  node6 -> node8
+  node8 -> node10
+  node8 -> node12
+  fun_stuff [label="fun stuff", class=ghost, URL="#testing"]
+  fun_stuff -> node12
+}
+
+digraph "not-so-fun-stuff" {
+  caption="more text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsummore text lots of text lorem ipsum"
+  title="not so fun stuff"
+  parent=checkout
+  node3 [label="New node", class=ghost, URL="#checkout"]
+  node11 [label="New node", class=ghost, URL="#testing"]
+  fun_stuff [label="fun stuff", class=ghost, URL="#testing"]
+  node4
+  node5
+  node6
+  node4 [label="New node", fillcolor="#e4f3e9"]
+  node5 [label="New node", fillcolor="#e4f3e9"]
+  node6 [label="New node", fillcolor="#e4f3e9"]
+  node3 -> node4
+  node4 -> node5
+  node4 -> node6
+  node6 -> node11
+  node6 -> fun_stuff
+  new_node_2 [label="New node"]
+  new_node_3 [label="New node"]
+  new_node_4 [label="New node"]
+}
+
+digraph testing {
+  title=testing
+  parent=checkout
+  node3 [label="New node", class=ghost, URL="#checkout"]
+  node2 [label="New node", class=ghost, URL="#checkout"]
+  subgraph cluster_3 {
+  class=green
+  label="big box"
+  fun_stuff [label="fun stuff", URL="#fun-stuff", class=rose, shape=ellipse]
+  not_so_fun_stuff [label="not so fun stuff", URL="#not-so-fun-stuff"]
+  node11
+  node13
+}
+  new_box [label="New box", URL="#new-box", class=rose]
+  node11 [label="New node", fillcolor="#e4f3e9"]
+  node13 [label=test, fillcolor="#e4f3e9"]
+  node13
+  node13
+  node3 -> not_so_fun_stuff
+  not_so_fun_stuff -> node11
+  not_so_fun_stuff -> fun_stuff
+  node11 -> node13
+  node2 -> new_box
+}
+
+digraph "new-box" {
+  title="New box"
+  parent=testing
+  node2 [label="New node", class=ghost, URL="#checkout"]
+  node15
+  node16
+  node15 [label="New node", class=rose]
+  node16 [label="New node", class=rose]
+  node2 -> node15
+  node15 -> node16
+}

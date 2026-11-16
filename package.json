@@ -1,0 +1,35 @@
+{
+  "name": "diagrams",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node server.ts",
+    "build": "vite build && node scripts/build-web.mjs",
+    "start:dist": "node dist/server.js",
+    "dev": "concurrently -n vite,node -c cyan,green \"vite build --watch\" \"node --watch dist/server.js\"",
+    "dev:fast": "node --watch server.ts",
+    "test": "node --test server.test.ts test/*.test.js",
+    "typecheck": "tsc --noEmit",
+    "build:artifact": "node scripts/build-web.mjs --artifact",
+    "e2e": "node e2e/run.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "concurrently": "^9.0.0",
+    "playwright-core": "^1.63.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@viz-js/viz": "^3.31.0",
+    "aws4fetch": "^1.0.20",
+    "fastify": "^5.12.5",
+    "prom-client": "^15.1.3",
+    "zod": "^4.6.7"
+  }
+}

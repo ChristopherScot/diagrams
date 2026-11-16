@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diagrams
+  namespace: diagrams
+  labels:
+    app: diagrams
+    team: me-myself-and-i
+spec:
+  replicas: 1
+  # At one replica the default rolling update takes the only pod down
+  # first; surging instead keeps the service up across a deploy.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: diagrams
+  template:
+    metadata:
+      annotations:
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/metrics.path: "/metrics"
+        k8s.grafana.com/metrics.portNumber: "3000"
+        reloader.stakater.com/secret-reload-on-change: "diagrams-secrets"
+      labels:
+        app: diagrams
+        team: me-myself-and-i
+    spec:
+      # Required by the restricted Pod Security Standard, and the cheapest
+      # hardening available.
+      serviceAccountName: diagrams
+      # Longer than the server's 20s drain so shutdown finishes before
+      # SIGKILL.
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: diagrams
+          image: ghcr.io/christopherscot/diagrams:latest
+          ports:
+            - containerPort: 3000
+          # Stated rather than left to Kubernetes, whose default for a :latest
+          # image is Always.
+          #
+          # This depends on argocd-image-updater pinning the image by digest (see
+          # kustomization.yaml). A digest names exactly one image, so a new build
+          # arrives as a new reference and is pulled, while an unchanged one is
+          # reused from the node's cache. Always would add a registry round trip
+          # to every start, and a pod scaling up from zero could not start while
+          # the registry was unreachable, even with the image cached.
+          #
+          # If the pin is missing - the updater has not written one yet, or is
+          # skipping this app - the pod runs bare :latest, and a node that already
+          # has some :latest keeps it, restart or not. Check the live Application's
+          # spec.source.kustomize.images for a digest.
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PORT
+              value: "3000"
+            - name: PUBLIC_URL
+              value: "https://diagrams.home.chrisscotmartin.com"
+            - name: S3_BUCKET
+              value: "diagrams"
+            - name: S3_ENDPOINT
+              value: "http://garage.garage.svc.cluster.local:3900"
+            - name: STORAGE
+              value: "garage"
+          envFrom:
+            - secretRef:
+                name: diagrams-secrets
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+      volumes:
+        - name: tmp
+          emptyDir: {}

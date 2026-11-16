@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diagrams
+  namespace: diagrams
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: external
+  tls:
+    - hosts: [diagrams.home.chrisscotmartin.com]
+      secretName: diagrams-tls
+  rules:
+    - host: diagrams.home.chrisscotmartin.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: diagrams
+                port:
+                  number: 80
